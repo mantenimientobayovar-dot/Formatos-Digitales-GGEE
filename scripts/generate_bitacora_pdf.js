@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 const { jsPDF } = require('jspdf');
 require('jspdf-autotable');
 
@@ -12,50 +11,42 @@ const doc = new jsPDF({
 const pageWidth = doc.internal.pageSize.getWidth(); // 210
 const pageHeight = doc.internal.pageSize.getHeight(); // 297
 const margin = 14;
-const contentWidth = pageWidth - (margin * 2);
 
-let y = 16;
-
-function checkPage(needed) {
-  if (y + needed > pageHeight - 18) {
-    doc.addPage();
-    y = 16;
-    drawHeaderBar();
-  }
-}
-
-function drawHeaderBar() {
+// Función para dibujar encabezado institucional en cada página
+function drawHeader(doc) {
+  // Barra superior Copeinca
   doc.setFillColor(11, 66, 76); // #0b424c
-  doc.rect(0, 0, pageWidth, 8, 'F');
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
+  doc.rect(0, 0, pageWidth, 10, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
   doc.setTextColor(255, 255, 255);
-  doc.text('COPEINCA — REPORTE TÉCNICO & REGISTRO DE DESARROLLO', margin, 5.5);
-  doc.text('SEDE BAYÓVAR', pageWidth - margin - 24, 5.5);
+  doc.text('COPEINCA — REGISTRO DE DESARROLLO Y GESTIÓN OPERATIVA', margin, 6.8);
+  doc.text('SEDE BAYÓVAR', pageWidth - margin - 25, 6.8);
 }
 
-// Draw initial top bar
-drawHeaderBar();
+// Banner de Título Principal en la Primera Página
+drawHeader(doc);
 
-// Title Banner
 doc.setFillColor(243, 246, 249);
-doc.roundedRect(margin, y, contentWidth, 26, 2, 2, 'F');
-doc.setDrawColor(203, 213, 225);
-doc.roundedRect(margin, y, contentWidth, 26, 2, 2, 'D');
+doc.roundedRect(margin, 15, pageWidth - (margin * 2), 26, 2, 2, 'F');
+doc.setDrawColor(180, 200, 215);
+doc.setLineWidth(0.4);
+doc.roundedRect(margin, 15, pageWidth - (margin * 2), 26, 2, 2, 'D');
 
 doc.setFont('helvetica', 'bold');
-doc.setFontSize(14);
+doc.setFontSize(15);
 doc.setTextColor(11, 66, 76);
-doc.text('BITÁCORA INTEGRAL DE DESARROLLO Y DESPLIEGUE', margin + 6, y + 8);
+doc.text('BITÁCORA INTEGRAL DE DESARROLLO Y DESPLIEGUE', margin + 6, 23.5);
 
 doc.setFont('helvetica', 'normal');
-doc.setFontSize(9);
-doc.setTextColor(71, 85, 105);
-doc.text('Sistema de Formatos Digitales GGEE & Casa de Fuerza — Next.js 14 + Supabase + Vercel', margin + 6, y + 15);
-doc.setFontSize(8);
-doc.text('Repositorio: github.com/mantenimientobayovar-dot/Formatos-Digitales-GGEE | Fecha: 18/11/2026', margin + 6, y + 21);
+doc.setFontSize(10);
+doc.setTextColor(51, 65, 85);
+doc.text('Sistema de Formatos Digitales GGEE & Casa de Fuerza (Next.js 14 + Supabase + Vercel)', margin + 6, 30);
 
-y += 31;
+doc.setFontSize(8.5);
+doc.setTextColor(100, 116, 139);
+doc.text('Repositorio: github.com/mantenimientobayovar-dot/Formatos-Digitales-GGEE  |  Fecha: 18/11/2026', margin + 6, 36);
 
 const hitos = [
   {
@@ -64,9 +55,9 @@ const hitos = [
     mensaje: "QUIERO QUE EL FORMATO 'GPP-FOR-021 Registro de Operaciones de Grupos Electrógenos v01.xlsx' TENGA LA ESTRUCTURA DE LAS IMAGENES QUE ESTOY COMPARTIENDO, QUE SEA SIMILAR EN DONDE SE PUEDA SELECCIONAR EL OPERADOR DE TURNO, LAS 24 HORAS UNA A UNA, QUE TENGA LAS MISMAS IMAGENES, AGREGA ICONOS INTERACTIVOS, MANTÉN LOS COLORES, QUE EL LOGO DE COPEINCA TAMBIÉN ESTE TAL CUAL...",
     acciones: [
       "Extracción y mapeo de variables operativas: Presión Aceite (PSI), T° Agua (°C), RPM, Frecuencia (Hz), Amperaje (A), Cos φ y Energía (kWh).",
-      "Adopción de la paleta oficial de Copeinca (Teal #0b424c, fondos neutros #f3f6f9 y cabeceras #152336).",
-      "Estructuración de las 3 vistas troncales: Registro por Hora (24h), Hoja Consolidada (matriz) y Gráficos por Hora con KPIs.",
-      "Motor de generación de PDF oficial con membrete y cuadros de VoBo."
+      "Adopción estricta de la paleta oficial de Copeinca (Teal #0b424c, fondos #f3f6f9 y cabeceras #152336).",
+      "Estructuración de las 3 vistas: Registro por Hora (24h), Hoja Consolidada (matriz) y Gráficos por Hora con KPIs.",
+      "Motor de generación de PDF oficial con membrete y cuadros de VoBo de Jefatura y Superintendencia."
     ]
   },
   {
@@ -75,7 +66,7 @@ const hitos = [
     mensaje: "QUIERO QUE USES NEXT.JS PARA QUE HAGAS UNA INTERFACE MÁS DINÁMICA COPIANDO TAL CUAL LO DE LA IMAGENA DJUNTA Y QUE LOS FORMULARIOS S EVEAN COMPACTOS COMO LA IMAGEN",
     acciones: [
       "Inicialización de Next.js 14 (App Router) con TypeScript y Tailwind CSS.",
-      "Diseño de tarjetas de medición compactas con formato pastilla (pill inputs), insignias 'Operando' y unidades flotantes a la derecha."
+      "Diseño de tarjetas de medición compactas con formato pastilla (pill inputs), insignias 'Operando' y unidades flotantes a la derecha (PSI, °C, RPM, Hz, A, Cos φ, kWh)."
     ]
   },
   {
@@ -92,7 +83,7 @@ const hitos = [
     titulo: "Definición del Catálogo Oficial de los 9 Grupos Electrógenos",
     mensaje: "EN LO QUE CORRESPONDE A LA CANTIDAD DE GRUPOS ELECTROGENOS SON 9. QUIERO QUE EN VEZ DE 3 APAREZCAN LOS 9 Y SOLO DEBA SELECIONAR CUALQUIERA DE ELLOS: G1 BURMEISTER, G3 BURMEISTER, G4 KTA 19, G5 CAT C18, G6 KTA 50, G7 CAT 3306, G9 PERKINS, G10 CAT 3512 (PIS), G11 CAT 3512 B",
     acciones: [
-      "Definición de constantes tipadas GRUPOS_OFICIALES en src/types/index.ts.",
+      "Definición de constantes tipadas GRUPOS_OFICIALES en src/types/index.ts con los 9 motores oficiales.",
       "Matriz de botones táctiles con checkmark para activar grupos por cada hora.",
       "Adaptación de la matriz consolidada de 24 horas y exportador PDF para los 9 grupos."
     ]
@@ -102,7 +93,7 @@ const hitos = [
     titulo: "Solución al Error de Caché de Webpack (138.js)",
     mensaje: "Error: Cannot find module './138.js' Require stack: C:\\Users\\Hans\\Desktop\\FORMATOS DIGITALES GGEE\\.next\\server\\webpack-runtime.js...",
     acciones: [
-      "Diagnóstico: Desincronización de caché en caliente de Webpack en .next.",
+      "Diagnóstico: Desincronización de caché en caliente de Webpack en la carpeta .next.",
       "Solución: Purga completa de .next y creación del script robusto INICIAR_SISTEMA_LOCAL.bat."
     ]
   },
@@ -129,7 +120,7 @@ const hitos = [
     mensaje: "SUBE EL PROYECTO A ESTE REPOSITORIO https://github.com/mantenimientobayovar-dot/Formatos-Digitales-GGEE.git MI CUENTA ESTA ASOCIADA A ESTE CORREO mantenimiento.bayovar@gmail.com",
     acciones: [
       "Configuración de Git con usuario 'Mantenimiento Bayovar'.",
-      "Vinculación con origin/main y creación del script SUBIR_A_GITHUB.bat."
+      "Vinculación con origin/main y creación del script de subida rápida SUBIR_A_GITHUB.bat."
     ]
   },
   {
@@ -154,103 +145,138 @@ const hitos = [
   }
 ];
 
+// Generar cada Hito como una tabla estructurada con autoTable
+// Esto garantiza CERO solapamiento, cálculo automático de altura de texto,
+// fuentes grandes y márgenes generosos.
+let currentY = 46;
+
 hitos.forEach((h) => {
-  checkPage(38);
+  const tableBody = [
+    [
+      {
+        content: `TU MENSAJE:\n"${h.mensaje}"`,
+        styles: {
+          fontStyle: 'italic',
+          textColor: [51, 65, 85],
+          fillColor: [248, 250, 252],
+          fontSize: 9,
+          cellPadding: 3.5,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.3
+        }
+      }
+    ],
+    [
+      {
+        content: `ACCIONES TÉCNICAS IMPLEMENTADAS:\n` + h.acciones.map(a => `• ${a}`).join('\n'),
+        styles: {
+          textColor: [15, 23, 42],
+          fillColor: [255, 255, 255],
+          fontSize: 9.5,
+          cellPadding: 4,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.3
+        }
+      }
+    ]
+  ];
 
-  // Hito Header Badge
-  doc.setFillColor(11, 66, 76);
-  doc.rect(margin, y, contentWidth, 6, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text(`HITO ${h.num}: ${h.titulo.toUpperCase()}`, margin + 3, y + 4.2);
-  y += 6;
-
-  // User Message Box
-  const splitMsg = doc.splitTextToSize(`" ${h.mensaje} "`, contentWidth - 10);
-  const msgBoxHeight = (splitMsg.length * 3.7) + 5;
-  checkPage(msgBoxHeight + 22);
-
-  doc.setFillColor(248, 250, 252);
-  doc.rect(margin, y, contentWidth, msgBoxHeight, 'F');
-  doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, msgBoxHeight, 'D');
-
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(7.5);
-  doc.setTextColor(51, 65, 85);
-  doc.text(splitMsg, margin + 4, y + 4);
-  y += msgBoxHeight + 2;
-
-  // Actions bullets
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(15, 23, 42);
-  doc.text('Acciones Técnicas Implementadas:', margin + 2, y + 3.5);
-  y += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(71, 85, 105);
-
-  h.acciones.forEach((acc) => {
-    const splitAcc = doc.splitTextToSize(`• ${acc}`, contentWidth - 8);
-    checkPage((splitAcc.length * 3.5) + 2);
-    doc.text(splitAcc, margin + 4, y);
-    y += (splitAcc.length * 3.5) + 0.8;
+  doc.autoTable({
+    startY: currentY,
+    margin: { left: margin, right: margin, top: 14, bottom: 16 },
+    head: [
+      [
+        {
+          content: `HITO ${h.num}: ${h.titulo.toUpperCase()}`,
+          styles: {
+            fillColor: [11, 66, 76],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold',
+            cellPadding: 3.5
+          }
+        }
+      ]
+    ],
+    body: tableBody,
+    theme: 'grid',
+    didDrawPage: function() {
+      drawHeader(doc);
+    }
   });
 
-  y += 3.5;
+  currentY = doc.lastAutoTable.finalY + 6;
 });
 
-// Final Deployment Guide Page
-checkPage(50);
-doc.setFillColor(21, 35, 54); // #152336
-doc.rect(margin, y, contentWidth, 6.5, 'F');
-doc.setFont('helvetica', 'bold');
-doc.setFontSize(9);
-doc.setTextColor(255, 255, 255);
-doc.text('GUÍA RÁPIDA: ACCESO AL LINK DE DESPLIEGUE EN VERCEL', margin + 3, y + 4.5);
-y += 9.5;
-
-const guideLines = [
-  "1. Ingresar al Dashboard de Vercel (vercel.com/dashboard) con tu cuenta.",
-  "2. Seleccionar el proyecto 'Formatos-Digitales-GGEE'.",
-  "3. En la sección 'Deployments', el estado del commit más reciente estará marcado en verde como 'Ready'.",
-  "4. Tu enlace de producción público estará visible en la tarjeta superior (ej: https://formatos-digitales-ggee.vercel.app).",
-  "5. Variables en Vercel: En 'Settings > Environment Variables', ingresa NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-  "6. Nuevos cambios: Para publicar futuras actualizaciones, ejecuta SUBIR_A_GITHUB.bat y Vercel se actualizará automáticamente."
-];
-
-guideLines.forEach((line) => {
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(30, 41, 59);
-  doc.text(line, margin + 3, y);
-  y += 4.8;
+// Guía final de despliegue en Vercel
+doc.autoTable({
+  startY: currentY,
+  margin: { left: margin, right: margin, top: 14, bottom: 16 },
+  head: [
+    [
+      {
+        content: 'GUÍA RÁPIDA: ACCESO AL LINK DE DESPLIEGUE EN VERCEL',
+        styles: {
+          fillColor: [21, 35, 54], // #152336
+          textColor: [255, 255, 255],
+          fontSize: 10.5,
+          fontStyle: 'bold',
+          cellPadding: 3.5
+        }
+      }
+    ]
+  ],
+  body: [
+    [
+      {
+        content: 
+`1. Ingresar a tu panel de Vercel (vercel.com/dashboard).
+2. Seleccionar el proyecto 'Formatos-Digitales-GGEE'.
+3. En la pestaña 'Deployments', el estado del commit más reciente figurará como 'Ready' (círculo verde).
+4. El enlace público estará disponible en la tarjeta principal (ej: https://formatos-digitales-ggee.vercel.app).
+5. Variables en Vercel: En 'Settings > Environment Variables', registrar NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.
+6. Publicar cambios futuros: Para cualquier actualización posterior, ejecutar SUBIR_A_GITHUB.bat y Vercel se actualizará automáticamente.`,
+        styles: {
+          fontSize: 9.5,
+          textColor: [15, 23, 42],
+          cellPadding: 4.5,
+          lineColor: [203, 213, 225],
+          lineWidth: 0.3
+        }
+      }
+    ]
+  ],
+  theme: 'grid',
+  didDrawPage: function() {
+    drawHeader(doc);
+  }
 });
 
-// Page Numbers Footer
+// Pie de página con numeración en todas las hojas
 const totalPages = doc.internal.getNumberOfPages();
 for (let i = 1; i <= totalPages; i++) {
   doc.setPage(i);
   doc.setDrawColor(203, 213, 225);
-  doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-  doc.setFontSize(7.5);
+  doc.setLineWidth(0.3);
+  doc.line(margin, pageHeight - 11, pageWidth - margin, pageHeight - 11);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text('Copeinca Sede Bayóvar — Sistema de Operación de Grupos Electrógenos y Casa de Fuerza', margin, pageHeight - 8);
-  doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 18, pageHeight - 8);
+  doc.text('Copeinca Sede Bayóvar — Formatos Digitales GGEE & Casa de Fuerza', margin, pageHeight - 7);
+  doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 7);
 }
 
-// Save outputs
+// Guardar archivos
 const outProject = 'C:\\Users\\Hans\\Desktop\\FORMATOS DIGITALES GGEE\\BITACORA_DESARROLLO_Y_DESPLIEGUE_COPEINCA.pdf';
 const outDesktop = 'C:\\Users\\Hans\\Desktop\\BITACORA_DESARROLLO_Y_DESPLIEGUE_COPEINCA.pdf';
+const outArtifact = 'C:\\Users\\Hans\\.gemini\antigravity\\brain\\2d4ff5b9-081c-4862-957d-87f36eede712\\BITACORA_DESARROLLO_Y_DESPLIEGUE_COPEINCA.pdf';
 
 const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 fs.writeFileSync(outProject, pdfBuffer);
 fs.writeFileSync(outDesktop, pdfBuffer);
 
-console.log('PDF generado exitosamente en:');
-console.log('1.', outProject);
-console.log('2.', outDesktop);
+try {
+  fs.writeFileSync('C:\\Users\\Hans\\.gemini\\antigravity\\brain\\2d4ff5b9-081c-4862-957d-87f36eede712\\BITACORA_DESARROLLO_Y_DESPLIEGUE_COPEINCA.pdf', pdfBuffer);
+} catch(e) {}
+
+console.log('PDF regenerado exitosamente con autoTable (sin solapamiento y tipografía ampliada).');
