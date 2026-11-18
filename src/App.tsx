@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { HeaderCopeinca } from './components/HeaderCopeinca'
 import { ToolbarCopeinca } from './components/ToolbarCopeinca'
 import { RegistroPorHoraTab } from './components/RegistroPorHoraTab'
@@ -17,7 +17,7 @@ import {
   getDefaultCasaFuerzaRegistro
 } from './services/storage'
 import { exportGPPToPDF } from './services/pdfExport'
-import { CheckCircle2, Building2, Zap } from 'lucide-react'
+import { CheckCircle2, Building2 } from 'lucide-react'
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<'registro' | 'consolidado' | 'graficos'>('registro')
@@ -29,7 +29,6 @@ export function App() {
   
   const [isSaving, setIsSaving] = useState(false)
   const [showSaveNotice, setShowSaveNotice] = useState(false)
-  const saveTimeoutRef = useRef<any>(null)
 
   // Cargar registros al cambiar la fecha
   useEffect(() => {
@@ -49,43 +48,31 @@ export function App() {
     return () => { isMounted = false }
   }, [fecha])
 
-  // Guardar GPP
+  // Modificación en memoria de GPP (SIN autoguardado)
   const handleGPPChange = (updated: GPPRegistroDia) => {
     setGppData(updated)
-    triggerDebouncedSave(updated, cfData)
   }
 
-  // Guardar Casa de Fuerza
+  // Modificación en memoria de Casa de Fuerza (SIN autoguardado)
   const handleCFChange = (updated: CasaFuerzaRegistroDia) => {
     setCfData(updated)
-    triggerDebouncedSave(gppData, updated)
   }
 
-  const triggerDebouncedSave = (currGPP: GPPRegistroDia, currCF: CasaFuerzaRegistroDia) => {
+  // GUARDADO MANUAL ACCIONADO ÚNICAMENTE POR EL OPERADOR
+  const handleManualSave = async () => {
     setIsSaving(true)
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-
-    saveTimeoutRef.current = setTimeout(async () => {
+    try {
       await Promise.all([
-        saveGPPRegistro(currGPP),
-        saveCasaFuerzaRegistro(currCF)
+        saveGPPRegistro(gppData),
+        saveCasaFuerzaRegistro(cfData)
       ])
       setIsSaving(false)
       setShowSaveNotice(true)
-      setTimeout(() => setShowSaveNotice(false), 2000)
-    }, 600)
-  }
-
-  // Guardado manual inmediato
-  const handleManualSave = async () => {
-    setIsSaving(true)
-    await Promise.all([
-      saveGPPRegistro(gppData),
-      saveCasaFuerzaRegistro(cfData)
-    ])
-    setIsSaving(false)
-    setShowSaveNotice(true)
-    setTimeout(() => setShowSaveNotice(false), 2500)
+      setTimeout(() => setShowSaveNotice(false), 2500)
+    } catch (error) {
+      console.error('Error al guardar registro:', error)
+      setIsSaving(false)
+    }
   }
 
   // Descarga de PDF oficial
@@ -101,7 +88,7 @@ export function App() {
         onToggleArea={() => setAreaMode(areaMode === 'ggee' ? 'casafuerza' : 'ggee')}
       />
 
-      {/* Notificación flotante de autoguardado */}
+      {/* Notificación flotante de confirmación cuando el operador hace clic en GUARDAR */}
       <div 
         className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-[#0b424c] text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 pointer-events-none ${
           showSaveNotice ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
@@ -154,7 +141,7 @@ export function App() {
               isSaving={isSaving}
             />
 
-            {/* 3. Pestaña 1: Registro por Hora (Exacto a Imagen 1) */}
+            {/* 3. Pestaña 1: Registro por Hora */}
             {currentTab === 'registro' && (
               <RegistroPorHoraTab
                 data={gppData}
@@ -162,7 +149,7 @@ export function App() {
               />
             )}
 
-            {/* 4. Pestaña 2: Hoja Consolidada (Exacto a Imagen 2) */}
+            {/* 4. Pestaña 2: Hoja Consolidada */}
             {currentTab === 'consolidado' && (
               <HojaConsolidadaTab
                 data={gppData}
@@ -170,7 +157,7 @@ export function App() {
               />
             )}
 
-            {/* 5. Pestaña 3: Gráficos por Hora (Exacto a Imagen 3) */}
+            {/* 5. Pestaña 3: Gráficos por Hora */}
             {currentTab === 'graficos' && (
               <GraficosPorHoraTab
                 data={gppData}
