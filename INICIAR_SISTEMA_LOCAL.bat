@@ -1,7 +1,7 @@
 @echo off
-title Sistema Digital GGEE - Servidor Local
+title Sistema Digital GGEE - Next.js Copeinca
 echo ========================================================
-echo   INICIANDO SISTEMA DIGITAL GGEE & CASA DE FUERZA
+echo   INICIANDO SISTEMA DIGITAL GGEE & CASA DE FUERZA (NEXT.JS)
 echo ========================================================
 echo.
 set PATH=C:\Users\Hans\.gemini\antigravity\tools\node;%PATH%

@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { GPPRegistroDia, HORAS_24, GPPDataHora } from '../types'
 import { FileDown, FileSpreadsheet } from 'lucide-react'

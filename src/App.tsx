@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect, useRef } from 'react'
 import { HeaderCopeinca } from './components/HeaderCopeinca'
 import { ToolbarCopeinca } from './components/ToolbarCopeinca'
