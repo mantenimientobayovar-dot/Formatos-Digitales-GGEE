@@ -12,10 +12,10 @@ export interface GPPDataHora {
 export interface GPPGrupo {
   id: string; // 'G1', 'G3', 'G4', 'G5', 'G6', 'G7', 'G9', 'G10', 'G11'
   nombre: string; // "GRUPO 1 - BURMEISTER", etc.
-  codigoCorto: string; // "G1", "G3", etc.
+  codigoCorto?: string; // "G1", "G3", etc.
   marcaModelo?: string;
   potenciaNominal?: string;
-  activo: boolean;
+  activo?: boolean;
   lecturas: Record<string, GPPDataHora>; // Key: "01:00", "02:00", ...
 }
 
