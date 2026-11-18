@@ -11,9 +11,10 @@ export interface GPPDataHora {
 
 export interface GPPGrupo {
   id: string; // 'G1', 'G2', 'G3'
-  nombre: string; // "GRUPO N° 1 - BURMEISTER", etc.
+  nombre: string; // "GRUPO 01", "GRUPO 02", "GRUPO 03"
+  marcaModelo?: string; // "BURMEISTER 1000 KW", etc.
   potenciaNominal?: string;
-  activo: boolean;
+  activo: boolean; // Si está activo a nivel de día o por hora
   lecturas: Record<string, GPPDataHora>; // Key: "01:00", "02:00", ...
 }
 
@@ -22,19 +23,59 @@ export interface GPPRegistroDia {
   fecha: string; // YYYY-MM-DD
   sede: string; // e.g. "BAYOVAR", "CHIMBOTE", "TODAS"
   proceso: string; // "PROCESO DE PRODUCCIÓN HARINA Y ACEITE"
+  turnoActivo: 'A' | 'B';
   operadorA: string;
   operadorB: string;
   observaciones: string;
   voboJefe: boolean;
   voboSuperintendente: boolean;
+  // Grupos activos por hora: Key = hora (ej "22:00"), Value = array de group ids activos (ej ['G1', 'G2'])
+  gruposActivosPorHora: Record<string, string[]>;
   grupos: Record<string, GPPGrupo>;
   creadoEn?: string;
   actualizadoEn?: string;
 }
 
-// Parámetros eléctricos cada 4 horas
+export const HORAS_24 = [
+  '01:00', '02:00', '03:00', '04:00', '05:00', '06:00',
+  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+  '19:00', '20:00', '21:00', '22:00', '23:00', '00:00'
+];
+
+export const HORAS_TURNO_A = [
+  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+];
+
+export const HORAS_TURNO_B = [
+  '19:00', '20:00', '21:00', '22:00', '23:00', '00:00',
+  '01:00', '02:00', '03:00', '04:00', '05:00', '06:00'
+];
+
+export const OPERADORES_PREDEFINIDOS = [
+  'Juan Sanchez',
+  'Luis Rumiche Anton',
+  'Carlos Mendoza Silva',
+  'Miguel Flores Ramirez',
+  'Jose Benites Chavez'
+];
+
+export const LIMITES_OPERACIONALES = {
+  presionAceite: { minWarn: 35, minDanger: 25, maxWarn: 75, maxDanger: 85, unidad: 'psi', optimo: '40 - 70 psi' },
+  tempAgua: { minWarn: 65, minDanger: 50, maxWarn: 85, maxDanger: 95, unidad: '°C', optimo: '70 - 85 °C' },
+  velocidadMotor: { minWarn: 1770, minDanger: 1740, maxWarn: 1830, maxDanger: 1860, unidad: 'rpm', optimo: '1800 rpm' },
+  frecuencia: { minWarn: 59.5, minDanger: 58.5, maxWarn: 60.5, maxDanger: 61.5, unidad: 'Hz', optimo: '59.8 - 60.2 Hz' },
+  amperaje: { minWarn: 100, minDanger: 50, maxWarn: 900, maxDanger: 1100, unidad: 'A', optimo: '300 - 800 A' },
+  factorPotencia: { minWarn: 0.80, minDanger: 0.70, maxWarn: 1.00, maxDanger: 1.05, unidad: 'Cos φ', optimo: '0.85 - 0.98' },
+  energia: { minWarn: 0, minDanger: 0, maxWarn: 9999999, maxDanger: 9999999, unidad: 'KWH', optimo: 'Totalizador KWH' }
+};
+
+// Mantenemos también los tipos de Casa de Fuerza para compatibilidad
+export const HORAS_4H = ['03:00', '07:00', '11:00', '15:00', '19:00', '00:00'];
+
 export interface Parametros4H {
-  hora: string; // "03:00", "07:00", "11:00", "15:00", "19:00", "00:00"
+  hora: string;
   v1?: number | null;
   v2?: number | null;
   v3?: number | null;
@@ -58,9 +99,9 @@ export interface EquipoCasaFuerza {
   consumoDieselGln?: number | null;
   energiaInicial?: number | null;
   energiaFinal?: number | null;
-  horasTurno1?: number | null; // 00:00 - 08:00
-  horasTurno2?: number | null; // 08:00 - 19:00
-  horasTurno3?: number | null; // 19:00 - 00:00
+  horasTurno1?: number | null;
+  horasTurno2?: number | null;
+  horasTurno3?: number | null;
   totalHoras?: number | null;
 }
 
@@ -70,27 +111,9 @@ export interface CasaFuerzaRegistroDia {
   responsable: string;
   sede: string;
   equipos: EquipoCasaFuerza[];
-  parametrosElectricos: Record<string, Parametros4H[]>; // key = id de equipo
+  parametrosElectricos: Record<string, Parametros4H[]>;
   fallasTurnoDia: string;
   fallasTurnoNoche: string;
   creadoEn?: string;
   actualizadoEn?: string;
 }
-
-export const HORAS_24 = [
-  '01:00', '02:00', '03:00', '04:00', '05:00', '06:00',
-  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
-  '19:00', '20:00', '21:00', '22:00', '23:00', '00:00'
-];
-
-export const HORAS_4H = ['03:00', '07:00', '11:00', '15:00', '19:00', '00:00'];
-
-// Límites operacionales con tolerancias estándar
-export const LIMITES_OPERACIONALES = {
-  presionAceite: { minWarn: 35, minDanger: 25, maxWarn: 75, maxDanger: 85, unidad: 'psi' },
-  tempAgua: { minWarn: 60, minDanger: 50, maxWarn: 85, maxDanger: 95, unidad: '°C' },
-  velocidadMotor: { minWarn: 1770, minDanger: 1740, maxWarn: 1830, maxDanger: 1860, unidad: 'rpm' },
-  frecuencia: { minWarn: 59.5, minDanger: 58.5, maxWarn: 60.5, maxDanger: 61.5, unidad: 'Hz' },
-  factorPotencia: { minWarn: 0.80, minDanger: 0.70, maxWarn: 1.00, maxDanger: 1.05, unidad: 'Cos φ' },
-};

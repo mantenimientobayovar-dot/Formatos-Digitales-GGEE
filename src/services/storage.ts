@@ -19,33 +19,59 @@ export function getDefaultGPPRegistro(fecha: string = new Date().toISOString().s
     }
   })
 
+  // Por defecto a las 22:00 dejamos activo Grupo 01 con datos de ejemplo para que la UI se vea viva
+  const gruposActivosPorHora: Record<string, string[]> = {}
+  HORAS_24.forEach(h => {
+    gruposActivosPorHora[h] = ['G1']
+  })
+
+  const g1Lecturas = JSON.parse(JSON.stringify(horasObj))
+  // Inicializamos algunas lecturas de muestra en G1
+  ;['18:00', '19:00', '20:00', '21:00', '22:00'].forEach(h => {
+    g1Lecturas[h] = {
+      hora: h,
+      presionAceite: 55.5,
+      tempAgua: 78.0,
+      velocidadMotor: 1800,
+      frecuencia: 60.0,
+      amperaje: 460,
+      factorPotencia: 0.88,
+      energia: 125430
+    }
+  })
+
   return {
     fecha,
     sede: 'BAYOVAR',
     proceso: 'PROCESO DE PRODUCCIÓN HARINA Y ACEITE',
-    operadorA: '',
-    operadorB: '',
+    turnoActivo: 'A',
+    operadorA: 'Juan Sanchez',
+    operadorB: 'Luis Rumiche Anton',
     observaciones: '',
     voboJefe: false,
     voboSuperintendente: false,
+    gruposActivosPorHora,
     grupos: {
       G1: {
         id: 'G1',
-        nombre: 'GRUPO ELECTROGENO N° 1 - BURMEISTER',
+        nombre: 'GRUPO 01',
+        marcaModelo: 'BURMEISTER N° 1',
         potenciaNominal: '1000 KW',
         activo: true,
-        lecturas: JSON.parse(JSON.stringify(horasObj))
+        lecturas: g1Lecturas
       },
       G2: {
         id: 'G2',
-        nombre: 'GRUPO ELECTROGENO N° 2 - BURMEISTER',
+        nombre: 'GRUPO 02',
+        marcaModelo: 'BURMEISTER N° 2',
         potenciaNominal: '1000 KW',
         activo: false,
         lecturas: JSON.parse(JSON.stringify(horasObj))
       },
       G3: {
         id: 'G3',
-        nombre: 'GRUPO ELECTROGENO N° 3 - BURMEISTER',
+        nombre: 'GRUPO 03',
+        marcaModelo: 'BURMEISTER N° 3',
         potenciaNominal: '1000 KW',
         activo: false,
         lecturas: JSON.parse(JSON.stringify(horasObj))
@@ -74,7 +100,6 @@ export function getDefaultCasaFuerzaRegistro(fecha: string = new Date().toISOStr
   ]
 
   const params4HBase: Record<string, any[]> = {}
-  // Generar parámetros de 4H para los 3 primeros grupos
   ;['G1', 'G2', 'G3'].forEach(gid => {
     params4HBase[gid] = HORAS_4H.map(h => ({
       hora: h,
@@ -104,8 +129,6 @@ export function getDefaultCasaFuerzaRegistro(fecha: string = new Date().toISOStr
   }
 }
 
-// ==================== GPP-FOR-021 Storage ====================
-
 export async function saveGPPRegistro(data: GPPRegistroDia): Promise<void> {
   const key = `${GPP_STORAGE_KEY_PREFIX}${data.fecha}`
   const payload = {
@@ -113,10 +136,8 @@ export async function saveGPPRegistro(data: GPPRegistroDia): Promise<void> {
     actualizadoEn: new Date().toISOString()
   }
   
-  // Guardado local inmediato
   localStorage.setItem(key, JSON.stringify(payload))
 
-  // Sincronización en segundo plano con Supabase si está disponible
   if (isSupabaseConfigured && supabase) {
     try {
       await supabase.from('gpp_registros').upsert({
@@ -126,7 +147,7 @@ export async function saveGPPRegistro(data: GPPRegistroDia): Promise<void> {
         actualizado_en: payload.actualizadoEn
       }, { onConflict: 'fecha' })
     } catch (err) {
-      console.warn('Error sincronizando con Supabase, guardado solo en local:', err)
+      console.warn('Error sincronizando Supabase:', err)
     }
   }
 }
@@ -137,13 +158,18 @@ export async function loadGPPRegistro(fecha: string): Promise<GPPRegistroDia> {
 
   if (localData) {
     try {
-      return JSON.parse(localData)
+      const parsed = JSON.parse(localData)
+      // Asegurar valores por defecto si se creó con versión anterior
+      if (!parsed.gruposActivosPorHora) parsed.gruposActivosPorHora = {}
+      if (!parsed.turnoActivo) parsed.turnoActivo = 'A'
+      if (!parsed.operadorA) parsed.operadorA = 'Juan Sanchez'
+      if (!parsed.operadorB) parsed.operadorB = 'Luis Rumiche Anton'
+      return parsed
     } catch (e) {
       console.error('Error parseando registro local GPP:', e)
     }
   }
 
-  // Si no está local y Supabase está activo, consultar remoto
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
@@ -161,11 +187,8 @@ export async function loadGPPRegistro(fecha: string): Promise<GPPRegistroDia> {
     }
   }
 
-  // Retornar plantilla por defecto con la fecha solicitada
   return getDefaultGPPRegistro(fecha)
 }
-
-// ==================== Casa de Fuerza Storage ====================
 
 export async function saveCasaFuerzaRegistro(data: CasaFuerzaRegistroDia): Promise<void> {
   const key = `${CASA_FUERZA_STORAGE_KEY_PREFIX}${data.fecha}`
