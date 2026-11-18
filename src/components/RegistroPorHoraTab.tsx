@@ -6,6 +6,7 @@ import {
   HORAS_24, 
   HORAS_TURNO_A, 
   HORAS_TURNO_B,
+  GRUPOS_OFICIALES,
   GPPDataHora
 } from '../types'
 import { 
@@ -24,7 +25,6 @@ interface RegistroPorHoraTabProps {
 }
 
 export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, onChange }) => {
-  // Inicializar en la hora actual o 23:00 (como en la última imagen adjunta)
   const currentHourNum = new Date().getHours()
   const defaultHour = HORAS_24[currentHourNum === 0 ? 23 : currentHourNum - 1] || '23:00'
   const [selectedHora, setSelectedHora] = useState<string>(defaultHour)
@@ -65,9 +65,9 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
     })
   }
 
-  // Seleccionar todos los grupos
+  // Seleccionar todos los 9 grupos
   const handleSelectAllGroups = () => {
-    const all = ['G1', 'G2', 'G3']
+    const all = GRUPOS_OFICIALES.map(g => g.id)
     const isAllSelected = all.every(g => activeGroupIds.includes(g))
     onChange({
       ...data,
@@ -288,7 +288,7 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
       </div>
 
       {/* ========================================================================= */}
-      {/* COLUMNA DERECHA: REGISTRO DE MEDICIONES COMPACTO (EXACTO A LA IMAGEN)      */}
+      {/* COLUMNA DERECHA: REGISTRO DE MEDICIONES DE LOS 9 GRUPOS                   */}
       {/* ========================================================================= */}
       <div className="lg:col-span-8 space-y-5">
         {/* Encabezado de la Hora Seleccionada */}
@@ -312,45 +312,50 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
             </div>
           </div>
 
-          {/* Barra de Grupos en Operación (Idéntica a la Imagen con Check ✓) */}
+          {/* Barra de los 9 Grupos Oficiales en Operación */}
           <div className="pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
                 <span className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-tight">
-                  GRUPOS EN OPERACIÓN A LAS {selectedHora}
+                  GRUPOS EN OPERACIÓN A LAS {selectedHora} ({activeGroupIds.length} activos)
                 </span>
               </div>
               <button
                 onClick={handleSelectAllGroups}
                 className="text-xs font-bold text-slate-500 hover:text-[#0b424c] transition"
               >
-                {activeGroupIds.length === 3 ? 'Desmarcar todas' : 'Seleccionar todas'}
+                {activeGroupIds.length === GRUPOS_OFICIALES.length ? 'Desmarcar todas' : 'Seleccionar todas'}
               </button>
             </div>
             <p className="text-xs text-slate-400 mb-3">
-              Selecciona los grupos activos para desplegar sus formularios de medición.
+              Selecciona cualquiera de los 9 grupos electrógenos activos para registrar sus parámetros de operación.
             </p>
 
-            {/* Píldoras con Checkmark ✓ cuando están activas */}
-            <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-              {(['G1', 'G2', 'G3'] as const).map(gid => {
-                const isActive = activeGroupIds.includes(gid)
-                const label = gid === 'G1' ? 'GRUPO 01' : gid === 'G2' ? 'GRUPO 02' : 'GRUPO 03'
+            {/* Píldoras de los 9 Grupos (Nomenclatura Oficial con Checkmark ✓) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {GRUPOS_OFICIALES.map(gDef => {
+                const isActive = activeGroupIds.includes(gDef.id)
 
                 return (
                   <button
-                    key={gid}
-                    onClick={() => toggleGroupForHour(gid)}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition ${
+                    key={gDef.id}
+                    onClick={() => toggleGroupForHour(gDef.id)}
+                    className={`flex items-center justify-between gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border-2 transition ${
                       isActive
-                        ? 'border-emerald-500 bg-emerald-50/70 text-emerald-900 shadow-sm'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                        ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 shadow-sm'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
-                    <Zap className={`w-3.5 h-3.5 ${isActive ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
-                    <span>{label}</span>
-                    {isActive && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Zap className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+                      <span className="truncate">{gDef.nombre}</span>
+                    </div>
+                    {isActive ? (
+                      <Check className="w-4 h-4 text-emerald-600 stroke-[3] shrink-0 ml-1" />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-slate-200 shrink-0" />
+                    )}
                   </button>
                 )
               })}
@@ -359,7 +364,7 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
         </div>
 
         {/* ======================================================================= */}
-        {/* FORMULARIOS COMPACTOS EXACTOS A LA IMAGEN ADJUNTA                       */}
+        {/* FORMULARIOS COMPACTOS DE LOS GRUPOS SELECCIONADOS                       */}
         {/* ======================================================================= */}
         {activeGroupIds.length === 0 ? (
           <div className="bg-white border border-slate-200/90 rounded-2xl p-10 sm:p-14 text-center shadow-sm">
@@ -374,27 +379,28 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
             </p>
           </div>
         ) : (
-          /* Cuadrícula de Formularios Compactos */
+          /* Cuadrícula de Formularios Compactos de los 9 Grupos */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
             {activeGroupIds.map(gid => {
               const grp = data.grupos?.[gid]
+              const gDef = GRUPOS_OFICIALES.find(g => g.id === gid)
+              const groupFullName = gDef?.nombre || grp?.nombre || gid
               const lec = (grp?.lecturas?.[selectedHora] || {}) as Partial<GPPDataHora>
-              const groupLabel = gid === 'G1' ? 'GRUPO 01' : gid === 'G2' ? 'GRUPO 02' : 'GRUPO 03'
 
               return (
                 <div 
                   key={gid} 
                   className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition max-w-md w-full"
                 >
-                  {/* Cabecera Oscura Idéntica a la Imagen */}
+                  {/* Cabecera Oscura con Nomenclatura Oficial */}
                   <div className="bg-[#152336] px-4 py-3.5 flex items-center justify-between text-white">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <h4 className="font-extrabold text-sm sm:text-base uppercase tracking-wider">
-                        {groupLabel}
+                    <div className="flex items-center gap-2 truncate mr-2">
+                      <Zap className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                      <h4 className="font-extrabold text-xs sm:text-sm uppercase tracking-wider truncate">
+                        {groupFullName}
                       </h4>
                     </div>
-                    <span className="text-[11px] font-semibold bg-[#22354e] text-slate-300 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+                    <span className="text-[10px] font-semibold bg-[#22354e] text-slate-300 px-2.5 py-0.5 rounded-full border border-slate-700/60 shrink-0">
                       Operando
                     </span>
                   </div>
@@ -519,7 +525,7 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
           </div>
         )}
 
-        {/* Card de Observaciones Generales (Exacto a la Imagen) */}
+        {/* Card de Observaciones Generales */}
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-2">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-slate-500" />

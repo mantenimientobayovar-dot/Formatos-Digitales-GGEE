@@ -1,4 +1,4 @@
-import { GPPRegistroDia, CasaFuerzaRegistroDia, HORAS_24, HORAS_4H } from '../types'
+import { GPPRegistroDia, CasaFuerzaRegistroDia, HORAS_24, HORAS_4H, GRUPOS_OFICIALES } from '../types'
 import { supabase, isSupabaseConfigured } from './supabase'
 
 const GPP_STORAGE_KEY_PREFIX = 'ggee_gpp_'
@@ -19,24 +19,40 @@ export function getDefaultGPPRegistro(fecha: string = new Date().toISOString().s
     }
   })
 
-  // Por defecto a las 22:00 dejamos activo Grupo 01 con datos de ejemplo para que la UI se vea viva
+  // Activar Grupo 1 por defecto a las horas del día para visualización inicial
   const gruposActivosPorHora: Record<string, string[]> = {}
   HORAS_24.forEach(h => {
     gruposActivosPorHora[h] = ['G1']
   })
 
-  const g1Lecturas = JSON.parse(JSON.stringify(horasObj))
-  // Inicializamos algunas lecturas de muestra en G1
-  ;['18:00', '19:00', '20:00', '21:00', '22:00'].forEach(h => {
-    g1Lecturas[h] = {
-      hora: h,
-      presionAceite: 55.5,
-      tempAgua: 78.0,
-      velocidadMotor: 1800,
-      frecuencia: 60.0,
-      amperaje: 460,
-      factorPotencia: 0.88,
-      energia: 125430
+  // Inicializar los 9 Grupos Oficiales
+  const gruposMap: Record<string, any> = {}
+  GRUPOS_OFICIALES.forEach((gDef, idx) => {
+    const lecturas = JSON.parse(JSON.stringify(horasObj))
+    
+    // Si es G1, precargar algunas lecturas de muestra
+    if (gDef.id === 'G1') {
+      ;['18:00', '19:00', '20:00', '21:00', '22:00', '23:00'].forEach(h => {
+        lecturas[h] = {
+          hora: h,
+          presionAceite: 55.5,
+          tempAgua: 78.0,
+          velocidadMotor: 1800,
+          frecuencia: 60.0,
+          amperaje: 460,
+          factorPotencia: 0.88,
+          energia: 125430
+        }
+      })
+    }
+
+    gruposMap[gDef.id] = {
+      id: gDef.id,
+      nombre: gDef.nombre,
+      codigoCorto: gDef.id,
+      marcaModelo: gDef.nombre.replace(`GRUPO ${gDef.numero} - `, ''),
+      activo: idx === 0,
+      lecturas
     }
   })
 
@@ -51,57 +67,30 @@ export function getDefaultGPPRegistro(fecha: string = new Date().toISOString().s
     voboJefe: false,
     voboSuperintendente: false,
     gruposActivosPorHora,
-    grupos: {
-      G1: {
-        id: 'G1',
-        nombre: 'GRUPO 01',
-        marcaModelo: 'BURMEISTER N° 1',
-        potenciaNominal: '1000 KW',
-        activo: true,
-        lecturas: g1Lecturas
-      },
-      G2: {
-        id: 'G2',
-        nombre: 'GRUPO 02',
-        marcaModelo: 'BURMEISTER N° 2',
-        potenciaNominal: '1000 KW',
-        activo: false,
-        lecturas: JSON.parse(JSON.stringify(horasObj))
-      },
-      G3: {
-        id: 'G3',
-        nombre: 'GRUPO 03',
-        marcaModelo: 'BURMEISTER N° 3',
-        potenciaNominal: '1000 KW',
-        activo: false,
-        lecturas: JSON.parse(JSON.stringify(horasObj))
-      }
-    }
+    grupos: gruposMap
   }
 }
 
 export function getDefaultCasaFuerzaRegistro(fecha: string = new Date().toISOString().split('T')[0]): CasaFuerzaRegistroDia {
   const equiposBase = [
-    { item: 1, id: 'G1', codigoSap: '14000785', puntoMedida: '53', nombre: 'GRUPO ELECTROGENO N º1 - BURMEISTER' },
-    { item: 2, id: 'G2', codigoSap: '14000797', puntoMedida: '54', nombre: 'GRUPO ELECTROGENO N º2 - BURMEISTER' },
-    { item: 3, id: 'G3', codigoSap: '14000809', puntoMedida: '55', nombre: 'GRUPO ELECTROGENO N º3 - BURMEISTER' },
-    { item: 4, id: 'G4', codigoSap: '14000821', puntoMedida: '56', nombre: 'GRUPO ELECTROGENO N º4 - CUMMINS KTA 19' },
-    { item: 5, id: 'G5', codigoSap: '14000825', puntoMedida: '1106', nombre: 'GRUPO ELECTROGENO N º5 - CATERPILLAR 3412' },
-    { item: 6, id: 'G6', codigoSap: '14000829', puntoMedida: '58', nombre: 'GRUPO ELECTROGENO N º6 - CUMMINS KTA 50' },
-    { item: 7, id: 'G7', codigoSap: '14000833', puntoMedida: '1151', nombre: 'GRUPO ELECTROGENO N º7 - CATERPILLAR 3306' },
-    { item: 8, id: 'G8', codigoSap: '14000837', puntoMedida: '60', nombre: 'GRUPO ELECTROGENO N º8 - PERKINS' },
-    { item: 9, id: 'G9', codigoSap: '14009834', puntoMedida: '-', nombre: 'GRUPO ELECTROGENO N º9 - PERKINS GEPP 88-3' },
-    { item: 10, id: 'G10', codigoSap: '-', puntoMedida: '-', nombre: 'GRUPO ELECTROGENO N º10 - CUMMINS KTA 38' },
-    { item: 11, id: 'G11', codigoSap: '-', puntoMedida: '-', nombre: 'GRUPO ELECTROGENO N º11 - CATERPILLAR 3512' },
-    { item: 12, id: 'P1', codigoSap: '14000840', puntoMedida: '38', nombre: 'PURIFICADOR CENTRIFUGO 1 ACEITE DE G.E' },
-    { item: 13, id: 'P2', codigoSap: '14000842', puntoMedida: '39', nombre: 'PURIFICADOR CENTRIFUGO 2 ACEITE DE G.E' },
-    { item: 14, id: 'C1', codigoSap: '14000844', puntoMedida: '22', nombre: 'COMPRESOR DE AIRE Nº 1 - GRUPOS ELECTROGENOS' },
-    { item: 15, id: 'C2', codigoSap: '14000846', puntoMedida: '23', nombre: 'COMPRESOR DE AIRE Nº 2 - GRUPOS ELECTROGENOS' }
+    { item: 1, id: 'G1', codigoSap: '14000785', puntoMedida: '53', nombre: 'GRUPO 1 - BURMEISTER' },
+    { item: 2, id: 'G3', codigoSap: '14000809', puntoMedida: '55', nombre: 'GRUPO 3 - BURMEISTER' },
+    { item: 3, id: 'G4', codigoSap: '14000821', puntoMedida: '56', nombre: 'GRUPO 4 - KTA 19' },
+    { item: 4, id: 'G5', codigoSap: '14000825', puntoMedida: '1106', nombre: 'GRUPO 5 - CAT C18' },
+    { item: 5, id: 'G6', codigoSap: '14000829', puntoMedida: '58', nombre: 'GRUPO 6 - KTA 50' },
+    { item: 6, id: 'G7', codigoSap: '14000833', puntoMedida: '1151', nombre: 'GRUPO 7 - CAT 3306' },
+    { item: 7, id: 'G9', codigoSap: '14009834', puntoMedida: '-', nombre: 'GRUPO 9 - PERKINS' },
+    { item: 8, id: 'G10', codigoSap: '-', puntoMedida: '-', nombre: 'GRUPO 10 - CAT 3512 (PIS)' },
+    { item: 9, id: 'G11', codigoSap: '-', puntoMedida: '-', nombre: 'GRUPO 11 - CAT 3512 B' },
+    { item: 10, id: 'P1', codigoSap: '14000840', puntoMedida: '38', nombre: 'PURIFICADOR CENTRIFUGO 1 ACEITE DE G.E' },
+    { item: 11, id: 'P2', codigoSap: '14000842', puntoMedida: '39', nombre: 'PURIFICADOR CENTRIFUGO 2 ACEITE DE G.E' },
+    { item: 12, id: 'C1', codigoSap: '14000844', puntoMedida: '22', nombre: 'COMPRESOR DE AIRE Nº 1 - GRUPOS ELECTROGENOS' },
+    { item: 13, id: 'C2', codigoSap: '14000846', puntoMedida: '23', nombre: 'COMPRESOR DE AIRE Nº 2 - GRUPOS ELECTROGENOS' }
   ]
 
   const params4HBase: Record<string, any[]> = {}
-  ;['G1', 'G2', 'G3'].forEach(gid => {
-    params4HBase[gid] = HORAS_4H.map(h => ({
+  GRUPOS_OFICIALES.forEach(gDef => {
+    params4HBase[gDef.id] = HORAS_4H.map(h => ({
       hora: h,
       v1: null, v2: null, v3: null,
       a1: null, a2: null, a3: null,
@@ -159,8 +148,20 @@ export async function loadGPPRegistro(fecha: string): Promise<GPPRegistroDia> {
   if (localData) {
     try {
       const parsed = JSON.parse(localData)
-      // Asegurar valores por defecto si se creó con versión anterior
-      if (!parsed.gruposActivosPorHora) parsed.gruposActivosPorHora = {}
+      const def = getDefaultGPPRegistro(fecha)
+
+      // Asegurar que contenga los 9 grupos oficiales actualizados
+      if (!parsed.grupos) parsed.grupos = {}
+      GRUPOS_OFICIALES.forEach(gDef => {
+        if (!parsed.grupos[gDef.id]) {
+          parsed.grupos[gDef.id] = def.grupos[gDef.id]
+        } else {
+          // Mantener la nomenclatura oficial exacta
+          parsed.grupos[gDef.id].nombre = gDef.nombre
+        }
+      })
+
+      if (!parsed.gruposActivosPorHora) parsed.gruposActivosPorHora = def.gruposActivosPorHora
       if (!parsed.turnoActivo) parsed.turnoActivo = 'A'
       if (!parsed.operadorA) parsed.operadorA = 'Juan Sanchez'
       if (!parsed.operadorB) parsed.operadorB = 'Luis Rumiche Anton'

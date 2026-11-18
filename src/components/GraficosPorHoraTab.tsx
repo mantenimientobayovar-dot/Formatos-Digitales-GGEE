@@ -6,7 +6,7 @@ import {
   HORAS_24, 
   HORAS_TURNO_A, 
   HORAS_TURNO_B,
-  LIMITES_OPERACIONALES,
+  GRUPOS_OFICIALES,
   GPPDataHora
 } from '../types'
 import { 
@@ -21,8 +21,7 @@ import {
   AreaChart,
   Activity,
   ArrowUpRight,
-  ArrowDownRight,
-  Clock
+  ArrowDownRight
 } from 'lucide-react'
 
 interface GraficosPorHoraTabProps {
@@ -43,7 +42,7 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
   const [rangoTurno, setRangoTurno] = useState<'dia' | 'turnoA' | 'turnoB'>('dia')
   const [selectedMetrica, setSelectedMetrica] = useState<MetricaTipo>('presionAceite')
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('line')
-  const [activeGroups, setActiveGroups] = useState<string[]>(['G1', 'G2', 'G3'])
+  const [activeGroups, setActiveGroups] = useState<string[]>(['G1', 'G3', 'G4'])
 
   // Filtrar horas según el rango seleccionado
   const horasFiltradas = rangoTurno === 'turnoA' 
@@ -81,11 +80,26 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
     energia: { label: 'Energía Acumulada', unidad: 'KWH', optimo: 'Acumulado KWH' }
   }[selectedMetrica]
 
-  const groupColors: Record<string, { stroke: string; fill: string; dot: string; label: string }> = {
-    G1: { stroke: '#0284c7', fill: 'rgba(2, 132, 199, 0.1)', dot: 'bg-sky-500', label: 'Grupo 01' },
-    G2: { stroke: '#10b981', fill: 'rgba(16, 185, 129, 0.1)', dot: 'bg-emerald-500', label: 'Grupo 02' },
-    G3: { stroke: '#f59e0b', fill: 'rgba(245, 158, 11, 0.1)', dot: 'bg-amber-500', label: 'Grupo 03' },
-  }
+  // Paleta de colores distintiva para los 9 grupos
+  const palette = [
+    { stroke: '#0284c7', fill: 'rgba(2, 132, 199, 0.1)', dot: 'bg-sky-500' },
+    { stroke: '#10b981', fill: 'rgba(16, 185, 129, 0.1)', dot: 'bg-emerald-500' },
+    { stroke: '#f59e0b', fill: 'rgba(245, 158, 11, 0.1)', dot: 'bg-amber-500' },
+    { stroke: '#8b5cf6', fill: 'rgba(139, 92, 246, 0.1)', dot: 'bg-purple-500' },
+    { stroke: '#ec4899', fill: 'rgba(236, 72, 153, 0.1)', dot: 'bg-pink-500' },
+    { stroke: '#06b6d4', fill: 'rgba(6, 182, 212, 0.1)', dot: 'bg-cyan-500' },
+    { stroke: '#ef4444', fill: 'rgba(239, 68, 68, 0.1)', dot: 'bg-red-500' },
+    { stroke: '#84cc16', fill: 'rgba(132, 204, 22, 0.1)', dot: 'bg-lime-500' },
+    { stroke: '#6366f1', fill: 'rgba(99, 102, 241, 0.1)', dot: 'bg-indigo-500' }
+  ]
+
+  const groupColors: Record<string, { stroke: string; fill: string; dot: string; label: string }> = {}
+  GRUPOS_OFICIALES.forEach((gDef, idx) => {
+    groupColors[gDef.id] = {
+      ...palette[idx % palette.length],
+      label: gDef.nombre
+    }
+  })
 
   const toggleGroup = (gid: string) => {
     if (activeGroups.includes(gid)) {
@@ -105,7 +119,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
   const chartW = svgWidth - padLeft - padRight
   const chartH = svgHeight - padTop - padBottom
 
-  // Rango Y dinámico
   const minValNumeric = valores.length > 0 ? Math.min(...valores) * 0.9 : 0
   const maxValNumeric = valores.length > 0 ? Math.max(...valores) * 1.1 : 100
   const ySpan = (maxValNumeric - minValNumeric) || 1
@@ -121,7 +134,7 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Subheader Toolbar (Exacto a la Imagen 3) */}
+      {/* Subheader Toolbar */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
         {/* Lado Izquierdo: Botón Ver Hoja de Registro */}
         <button
@@ -202,7 +215,7 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
         </div>
       </div>
 
-      {/* 4 KPI Cards (Exacto a la Imagen 3) */}
+      {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Promedio */}
         <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
@@ -271,9 +284,8 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
         </div>
       </div>
 
-      {/* Selector de Métricas y Tipo de Gráfico */}
+      {/* Selector de Métricas */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Píldoras de Métricas */}
         <div className="flex items-center gap-2 flex-wrap">
           {(['presionAceite', 'tempAgua', 'frecuencia', 'amperaje', 'factorPotencia', 'energia'] as const).map(mKey => {
             const isSelected = selectedMetrica === mKey
@@ -328,26 +340,26 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
         </div>
       </div>
 
-      {/* Selector de Grupos Electrógenos */}
-      <div className="flex items-center justify-between bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-500 uppercase">GRUPOS:</span>
-          {(['G1', 'G2', 'G3'] as const).map(gid => {
-            const isChecked = activeGroups.includes(gid)
-            const color = groupColors[gid]
+      {/* Selector de los 9 Grupos Electrógenos */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-2xl p-3.5 px-4 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-slate-500 uppercase mr-1">GRUPOS:</span>
+          {GRUPOS_OFICIALES.map(gDef => {
+            const isChecked = activeGroups.includes(gDef.id)
+            const color = groupColors[gDef.id]
 
             return (
               <button
-                key={gid}
-                onClick={() => toggleGroup(gid)}
-                className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                key={gDef.id}
+                onClick={() => toggleGroup(gDef.id)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
                   isChecked
                     ? 'bg-slate-50 border-slate-300 text-slate-800'
                     : 'bg-white border-transparent text-slate-400 opacity-60'
                 }`}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${color.dot}`} />
-                <span>{color.label}</span>
+                <span>{gDef.nombre}</span>
               </button>
             )
           })}
@@ -355,16 +367,16 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
 
         <button
           onClick={() => {
-            if (activeGroups.length === 3) setActiveGroups(['G1'])
-            else setActiveGroups(['G1', 'G2', 'G3'])
+            if (activeGroups.length === GRUPOS_OFICIALES.length) setActiveGroups(['G1'])
+            else setActiveGroups(GRUPOS_OFICIALES.map(g => g.id))
           }}
-          className="text-xs font-bold text-[#0b424c] hover:underline"
+          className="text-xs font-bold text-[#0b424c] hover:underline whitespace-nowrap"
         >
-          {activeGroups.length === 3 ? 'Solo Grupo 01' : 'Seleccionar Todas'}
+          {activeGroups.length === GRUPOS_OFICIALES.length ? 'Solo Grupo 1' : 'Seleccionar Todas'}
         </button>
       </div>
 
-      {/* Área del Gráfico Interactivo SVG (Exacto a la Imagen 3) */}
+      {/* Área del Gráfico Interactivo SVG */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-7 shadow-sm space-y-4">
         {/* Título del Gráfico y Badge Rango Óptimo */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -423,7 +435,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
             {/* Etiquetas de eje X (Horas) */}
             {horasFiltradas.map((h, idx) => {
               const x = getXPos(idx)
-              // Mostrar cada 2 o 3 horas para no amontonar
               const showLabel = idx % 2 === 0 || idx === horasFiltradas.length - 1
               return (
                 <g key={h}>
@@ -479,7 +490,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
 
               return (
                 <g key={gid}>
-                  {/* Área sombreada */}
                   {chartType === 'area' && (
                     <path
                       d={areaD}
@@ -487,7 +497,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
                     />
                   )}
 
-                  {/* Línea principal */}
                   {(chartType === 'line' || chartType === 'area') && (
                     <path
                       d={pathD}
@@ -499,7 +508,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
                     />
                   )}
 
-                  {/* Barras si se seleccionó gráfico de barras */}
                   {chartType === 'bar' && points.map((p, pIdx) => (
                     <rect
                       key={pIdx}
@@ -512,7 +520,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
                     />
                   ))}
 
-                  {/* Puntos / Marcadores */}
                   {points.map((p, pIdx) => (
                     <g key={pIdx}>
                       <circle
@@ -523,7 +530,6 @@ export const GraficosPorHoraTab: React.FC<GraficosPorHoraTabProps> = ({
                         stroke={color.stroke}
                         strokeWidth="2"
                       />
-                      {/* Tooltip text en hover */}
                       <title>{`${color.label} - ${horasFiltradas[pIdx]}: ${p.val} ${metricaMeta.unidad}`}</title>
                     </g>
                   ))}

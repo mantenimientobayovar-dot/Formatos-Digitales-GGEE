@@ -10,11 +10,12 @@ export interface GPPDataHora {
 }
 
 export interface GPPGrupo {
-  id: string; // 'G1', 'G2', 'G3'
-  nombre: string; // "GRUPO 01", "GRUPO 02", "GRUPO 03"
-  marcaModelo?: string; // "BURMEISTER 1000 KW", etc.
+  id: string; // 'G1', 'G3', 'G4', 'G5', 'G6', 'G7', 'G9', 'G10', 'G11'
+  nombre: string; // "GRUPO 1 - BURMEISTER", etc.
+  codigoCorto: string; // "G1", "G3", etc.
+  marcaModelo?: string;
   potenciaNominal?: string;
-  activo: boolean; // Si está activo a nivel de día o por hora
+  activo: boolean;
   lecturas: Record<string, GPPDataHora>; // Key: "01:00", "02:00", ...
 }
 
@@ -29,12 +30,24 @@ export interface GPPRegistroDia {
   observaciones: string;
   voboJefe: boolean;
   voboSuperintendente: boolean;
-  // Grupos activos por hora: Key = hora (ej "22:00"), Value = array de group ids activos (ej ['G1', 'G2'])
   gruposActivosPorHora: Record<string, string[]>;
   grupos: Record<string, GPPGrupo>;
   creadoEn?: string;
   actualizadoEn?: string;
 }
+
+// Catálogo Oficial de los 9 Grupos Electrógenos de Planta
+export const GRUPOS_OFICIALES: { id: string; numero: number; nombre: string; etiquetaCorta: string }[] = [
+  { id: 'G1', numero: 1, nombre: 'GRUPO 1 - BURMEISTER', etiquetaCorta: 'G1 BURMEISTER' },
+  { id: 'G3', numero: 3, nombre: 'GRUPO 3 - BURMEISTER', etiquetaCorta: 'G3 BURMEISTER' },
+  { id: 'G4', numero: 4, nombre: 'GRUPO 4 - KTA 19', etiquetaCorta: 'G4 KTA 19' },
+  { id: 'G5', numero: 5, nombre: 'GRUPO 5 - CAT C18', etiquetaCorta: 'G5 CAT C18' },
+  { id: 'G6', numero: 6, nombre: 'GRUPO 6 - KTA 50', etiquetaCorta: 'G6 KTA 50' },
+  { id: 'G7', numero: 7, nombre: 'GRUPO 7 - CAT 3306', etiquetaCorta: 'G7 CAT 3306' },
+  { id: 'G9', numero: 9, nombre: 'GRUPO 9 - PERKINS', etiquetaCorta: 'G9 PERKINS' },
+  { id: 'G10', numero: 10, nombre: 'GRUPO 10 - CAT 3512 (PIS)', etiquetaCorta: 'G10 CAT 3512 (PIS)' },
+  { id: 'G11', numero: 11, nombre: 'GRUPO 11 - CAT 3512 B', etiquetaCorta: 'G11 CAT 3512 B' }
+];
 
 export const HORAS_24 = [
   '01:00', '02:00', '03:00', '04:00', '05:00', '06:00',
@@ -71,7 +84,6 @@ export const LIMITES_OPERACIONALES = {
   energia: { minWarn: 0, minDanger: 0, maxWarn: 9999999, maxDanger: 9999999, unidad: 'KWH', optimo: 'Totalizador KWH' }
 };
 
-// Mantenemos también los tipos de Casa de Fuerza para compatibilidad
 export const HORAS_4H = ['03:00', '07:00', '11:00', '15:00', '19:00', '00:00'];
 
 export interface Parametros4H {

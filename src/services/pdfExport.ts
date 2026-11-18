@@ -1,9 +1,8 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { GPPRegistroDia, HORAS_24, GPPDataHora } from '../types'
+import { GPPRegistroDia, HORAS_24, GRUPOS_OFICIALES, GPPDataHora } from '../types'
 
 export function exportGPPToPDF(data: GPPRegistroDia) {
-  // Orientación horizontal (Landscape) A4 para albergar todas las columnas oficiales
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -13,16 +12,28 @@ export function exportGPPToPDF(data: GPPRegistroDia) {
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
 
+  // Determinar grupos que tuvieron operación hoy o los primeros 3
+  const activeIdsSet = new Set<string>()
+  Object.values(data.gruposActivosPorHora || {}).forEach(arr => arr.forEach(id => activeIdsSet.add(id)))
+  
+  // Si no hay ninguno explícito, incluir al menos G1, G3, G4
+  if (activeIdsSet.size === 0) {
+    activeIdsSet.add('G1')
+    activeIdsSet.add('G3')
+    activeIdsSet.add('G4')
+  }
+
+  const groupsToExport = GRUPOS_OFICIALES.filter(g => activeIdsSet.has(g.id))
+
   // 1. Encabezado Oficial Copeinca
-  // Marco del encabezado
   doc.setDrawColor(30, 41, 59)
   doc.setLineWidth(0.4)
   doc.rect(10, 8, pageWidth - 20, 24)
 
-  // Espacio para Logo Copeinca (lado izquierdo)
+  // Nombre Copeinca
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
-  doc.setTextColor(11, 66, 76) // Teal Copeinca
+  doc.setTextColor(11, 66, 76)
   doc.text('copeinca', 16, 20)
 
   doc.setFontSize(8)
@@ -30,7 +41,6 @@ export function exportGPPToPDF(data: GPPRegistroDia) {
   doc.setFont('helvetica', 'normal')
   doc.text('PLANTA INDUSTRIAL', 16, 25)
 
-  // Línea divisoria izquierda
   doc.line(55, 8, 55, 32)
 
   // Título central
@@ -42,7 +52,6 @@ export function exportGPPToPDF(data: GPPRegistroDia) {
   doc.setTextColor(11, 66, 76)
   doc.text('Registro de Operaciones de Grupos Electrógenos', (pageWidth / 2) - 5, 25, { align: 'center' })
 
-  // Línea divisoria derecha
   doc.line(pageWidth - 65, 8, pageWidth - 65, 32)
 
   // Metadatos oficiales a la derecha
@@ -68,7 +77,7 @@ export function exportGPPToPDF(data: GPPRegistroDia) {
   doc.setFont('helvetica', 'normal')
   doc.text('01 de 01', pageWidth - 35, 29)
 
-  // 2. Barra de Datos Operativos (Operadores y Fecha)
+  // 2. Barra de Operadores y Fecha
   doc.setFillColor(241, 245, 249)
   doc.rect(10, 34, pageWidth - 20, 8, 'F')
   doc.rect(10, 34, pageWidth - 20, 8, 'S')
@@ -91,75 +100,48 @@ export function exportGPPToPDF(data: GPPRegistroDia) {
   doc.setTextColor(11, 66, 76)
   doc.text(data.fecha, pageWidth - 38, 39.5)
 
-  // 3. Tabla Consolidada 24 Horas
-  const head = [
-    [
-      { content: 'HORA', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [11, 66, 76] } },
-      { content: 'GRUPO ELECTROGENO N° 1', colSpan: 7, styles: { halign: 'center', fillColor: [15, 46, 53] } },
-      { content: 'GRUPO ELECTROGENO N° 2', colSpan: 7, styles: { halign: 'center', fillColor: [11, 66, 76] } },
-      { content: 'GRUPO ELECTROGENO N° 3', colSpan: 7, styles: { halign: 'center', fillColor: [15, 46, 53] } },
-    ],
-    [
-      // G1
-      { content: 'P. Aceite\n(psi)', styles: { halign: 'center' } },
-      { content: 'T° Agua\n(°C)', styles: { halign: 'center' } },
-      { content: 'Veloc.\n(rpm)', styles: { halign: 'center' } },
-      { content: 'Freq.\n(Hz)', styles: { halign: 'center' } },
-      { content: 'Amp.\n(A)', styles: { halign: 'center' } },
-      { content: 'PF\n(Cos φ)', styles: { halign: 'center' } },
-      { content: 'Energía\n(KWH)', styles: { halign: 'center' } },
-      // G2
-      { content: 'P. Aceite\n(psi)', styles: { halign: 'center' } },
-      { content: 'T° Agua\n(°C)', styles: { halign: 'center' } },
-      { content: 'Veloc.\n(rpm)', styles: { halign: 'center' } },
-      { content: 'Freq.\n(Hz)', styles: { halign: 'center' } },
-      { content: 'Amp.\n(A)', styles: { halign: 'center' } },
-      { content: 'PF\n(Cos φ)', styles: { halign: 'center' } },
-      { content: 'Energía\n(KWH)', styles: { halign: 'center' } },
-      // G3
-      { content: 'P. Aceite\n(psi)', styles: { halign: 'center' } },
-      { content: 'T° Agua\n(°C)', styles: { halign: 'center' } },
-      { content: 'Veloc.\n(rpm)', styles: { halign: 'center' } },
-      { content: 'Freq.\n(Hz)', styles: { halign: 'center' } },
-      { content: 'Amp.\n(A)', styles: { halign: 'center' } },
-      { content: 'PF\n(Cos φ)', styles: { halign: 'center' } },
-      { content: 'Energía\n(KWH)', styles: { halign: 'center' } },
-    ]
+  // 3. Tabla de Grupos
+  const headRow1: any[] = [
+    { content: 'HORA', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [11, 66, 76] } }
   ]
+  const headRow2: any[] = []
+
+  groupsToExport.forEach(gDef => {
+    headRow1.push({
+      content: gDef.nombre,
+      colSpan: 7,
+      styles: { halign: 'center', fillColor: [11, 66, 76] }
+    })
+    headRow2.push(
+      { content: 'P. Aceite\n(psi)', styles: { halign: 'center' } },
+      { content: 'T° Agua\n(°C)', styles: { halign: 'center' } },
+      { content: 'Veloc.\n(rpm)', styles: { halign: 'center' } },
+      { content: 'Freq.\n(Hz)', styles: { halign: 'center' } },
+      { content: 'Amp.\n(A)', styles: { halign: 'center' } },
+      { content: 'PF\n(Cos φ)', styles: { halign: 'center' } },
+      { content: 'Energía\n(KWH)', styles: { halign: 'center' } }
+    )
+  })
 
   const body = HORAS_24.map(h => {
-    const g1 = (data.grupos?.G1?.lecturas?.[h] || {}) as Partial<GPPDataHora>
-    const g2 = (data.grupos?.G2?.lecturas?.[h] || {}) as Partial<GPPDataHora>
-    const g3 = (data.grupos?.G3?.lecturas?.[h] || {}) as Partial<GPPDataHora>
-
-    return [
-      h,
-      g1.presionAceite ?? '-',
-      g1.tempAgua ?? '-',
-      g1.velocidadMotor ?? '-',
-      g1.frecuencia ?? '-',
-      g1.amperaje ?? '-',
-      g1.factorPotencia ?? '-',
-      g1.energia ?? '-',
-      g2.presionAceite ?? '-',
-      g2.tempAgua ?? '-',
-      g2.velocidadMotor ?? '-',
-      g2.frecuencia ?? '-',
-      g2.amperaje ?? '-',
-      g2.factorPotencia ?? '-',
-      g2.energia ?? '-',
-      g3.presionAceite ?? '-',
-      g3.tempAgua ?? '-',
-      g3.velocidadMotor ?? '-',
-      g3.frecuencia ?? '-',
-      g3.amperaje ?? '-',
-      g3.factorPotencia ?? '-',
-      g3.energia ?? '-'
-    ]
+    const row: any[] = [h]
+    groupsToExport.forEach(gDef => {
+      const lec = (data.grupos?.[gDef.id]?.lecturas?.[h] || {}) as Partial<GPPDataHora>
+      row.push(
+        lec.presionAceite ?? '-',
+        lec.tempAgua ?? '-',
+        lec.velocidadMotor ?? '-',
+        lec.frecuencia ?? '-',
+        lec.amperaje ?? '-',
+        lec.factorPotencia ?? '-',
+        lec.energia ?? '-'
+      )
+    })
+    return row
   })
 
   autoTable(doc, {
-    head: head as any,
+    head: [headRow1, headRow2] as any,
     body: body as any,
     startY: 44,
     margin: { left: 10, right: 10 },
@@ -221,6 +203,5 @@ export function exportGPPToPDF(data: GPPRegistroDia) {
     doc.text(f.name, x + (colW / 2), signY + 13, { align: 'center' })
   })
 
-  // Guardar y descargar PDF
   doc.save(`GPP-FOR-021_${data.fecha}_Copeinca.pdf`)
 }
