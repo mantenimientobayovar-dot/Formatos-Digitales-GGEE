@@ -150,13 +150,30 @@ export async function loadGPPRegistro(fecha: string): Promise<GPPRegistroDia> {
       const parsed = JSON.parse(localData)
       const def = getDefaultGPPRegistro(fecha)
 
-      // Asegurar que contenga los 9 grupos oficiales actualizados
+      // Asegurar que contenga los 9 grupos oficiales y eliminar cualquier grupo obsoleto (como G2)
+      const validGroupIds = new Set(GRUPOS_OFICIALES.map(g => g.id))
+      
+      // Eliminar claves no oficiales de parsed.grupos
       if (!parsed.grupos) parsed.grupos = {}
+      Object.keys(parsed.grupos).forEach(key => {
+        if (!validGroupIds.has(key)) {
+          delete parsed.grupos[key]
+        }
+      })
+
+      // Limpiar gruposActivosPorHora de cualquier grupo obsoleto como G2
+      if (parsed.gruposActivosPorHora) {
+        Object.keys(parsed.gruposActivosPorHora).forEach(h => {
+          if (Array.isArray(parsed.gruposActivosPorHora[h])) {
+            parsed.gruposActivosPorHora[h] = parsed.gruposActivosPorHora[h].filter((gid: string) => validGroupIds.has(gid))
+          }
+        })
+      }
+
       GRUPOS_OFICIALES.forEach(gDef => {
         if (!parsed.grupos[gDef.id]) {
           parsed.grupos[gDef.id] = def.grupos[gDef.id]
         } else {
-          // Mantener la nomenclatura oficial exacta
           parsed.grupos[gDef.id].nombre = gDef.nombre
         }
       })

@@ -35,8 +35,10 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
   const currentTurnoNombre = isTurnoA ? 'TURNO A' : 'TURNO B'
   const currentOperador = isTurnoA ? (data.operadorA || 'Juan Sanchez') : (data.operadorB || 'Luis Rumiche Anton')
 
-  // Grupos activos en la hora seleccionada
-  const activeGroupIds: string[] = data.gruposActivosPorHora?.[selectedHora] || ['G1']
+  // Filtrar estrictamente solo los 9 grupos oficiales (ignorar cualquier G2 o residuo antiguo de caché)
+  const validOfficialIds = new Set(GRUPOS_OFICIALES.map(g => g.id))
+  const rawActiveIds: string[] = data.gruposActivosPorHora?.[selectedHora] || ['G1']
+  const activeGroupIds: string[] = rawActiveIds.filter(id => validOfficialIds.has(id))
 
   // Conteo de horas completadas
   const horasRegistradasCount = HORAS_24.filter(h => {
@@ -381,9 +383,10 @@ export const RegistroPorHoraTab: React.FC<RegistroPorHoraTabProps> = ({ data, on
         ) : (
           /* Cuadrícula de Formularios Compactos de los 9 Grupos */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
-            {activeGroupIds.map(gid => {
+            {activeGroupIds.filter(gid => validOfficialIds.has(gid)).map(gid => {
               const grp = data.grupos?.[gid]
               const gDef = GRUPOS_OFICIALES.find(g => g.id === gid)
+              if (!gDef) return null
               const groupFullName = gDef?.nombre || grp?.nombre || gid
               const lec = (grp?.lecturas?.[selectedHora] || {}) as Partial<GPPDataHora>
 

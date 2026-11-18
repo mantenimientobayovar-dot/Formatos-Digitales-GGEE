@@ -38,6 +38,9 @@ export function App() {
       const gpp = await loadGPPRegistro(fecha)
       const cf = await loadCasaFuerzaRegistro(fecha)
       if (isMounted) {
+        if (gpp?.grupos && (gpp.grupos as any).G2) {
+          delete (gpp.grupos as any).G2
+        }
         setGppData(gpp)
         setCfData(cf)
       }
